@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+
+.pytest_cache/
+
+reports/
+
+# Banco de dados local
+*.db
+
+# Configurações locais
+.env
+utils/config.py
