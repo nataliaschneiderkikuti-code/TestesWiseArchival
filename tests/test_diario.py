@@ -8,6 +8,60 @@ from pages.colecoes_page import ColecoesPage
 from pages.processos_page import ProcessosPage
 from utils.database import salvar_resultado, registrar_etapa
 
+import uuid
+from datetime import datetime
+
+PASTA_TESTES = Path("test_data")
+EXTENSOES_SUPORTADAS = {".pdf", ".png", ".mp3", ".mp4"}  # ajuste se quiser
+TAM_PREFIXO = 18
+
+
+def formatar_tamanho(tamanho_bytes):
+    mb = tamanho_bytes / (1024 * 1024)
+    if mb >= 1:
+        return f"{round(mb)}MB"
+    return f"{max(1, round(tamanho_bytes / 1024))}KB"
+
+
+def descobrir_casos(pasta=PASTA_TESTES, extensoes=EXTENSOES_SUPORTADAS):
+    pasta = Path(pasta)
+
+    if not pasta.is_dir():
+        raise FileNotFoundError(f"Pasta de testes não encontrada: {pasta}")
+
+    arquivos = [
+        a for a in pasta.iterdir()
+        if a.is_file() and a.suffix.lower() in extensoes
+    ]
+
+    if not arquivos:
+        raise FileNotFoundError(
+            f"Nenhum arquivo {sorted(extensoes)} encontrado em {pasta}"
+        )
+
+    if len(arquivos) > 999:
+        raise ValueError("Há mais de 999 arquivos; aumente o índice do prefixo.")
+
+    # Ordena por tipo e, dentro do tipo, do menor para o maior
+    arquivos.sort(key=lambda a: (a.suffix.lower(), a.stat().st_size, a.name))
+
+    run_id = uuid.uuid4().hex[:6]
+    casos = []
+
+    for indice, arquivo in enumerate(arquivos, start=1):
+        tipo = arquivo.suffix.lstrip(".").upper()
+        prefixo = f"AT-{run_id}-{indice:03d}-{tipo[:4].ljust(4, '_')}"
+        assert len(prefixo) == TAM_PREFIXO
+
+        casos.append({
+            "arquivo": str(arquivo),
+            "tipo": tipo,
+            "tamanho": formatar_tamanho(arquivo.stat().st_size),
+            "prefixo": prefixo,
+        })
+
+    return casos
+
 # Defina como False para pular a etapa de exclusão (processos e coleção)
 EXECUTAR_LIMPEZA = True
 
@@ -82,6 +136,12 @@ def processar_caso(page, processos, nome_colecao, caso, titulos_criados):
         raise FileNotFoundError(
             f"Arquivo de teste não encontrado: {arquivo}"
         )
+    
+    prefixo = caso["prefixo"]
+    titulo = (
+        f"{prefixo} {caso['tipo']} {caso['tamanho']} - Processo "
+        + datetime.now().strftime("%Y%m%d_%H%M%S")
+    )
 
     # Criação do processo e medição do upload.
     resultado = executar_etapa(
@@ -89,11 +149,9 @@ def processar_caso(page, processos, nome_colecao, caso, titulos_criados):
         processos.criar_processo,
         nome_colecao,
         str(arquivo),
-        caso["tipo"],
-        caso["tamanho"]
+        titulo,
     )
 
-    titulo = resultado["titulo"]
     # Registrar antes de esperar o processamento.
     # Assim, ele poderá ser excluído mesmo se uma etapa posterior falhar.
     titulos_criados.append(titulo)
@@ -104,7 +162,6 @@ def processar_caso(page, processos, nome_colecao, caso, titulos_criados):
     print(f"[ARQUIVO] {arquivo}")
     print(f"[TEMPO UPLOAD] {tempo_upload:.2f} segundos")
 
-    prefixo = f"AUTO-TEST {caso['tipo']} {caso['tamanho']}"
 
     # Espera a conclusão e mede o tempo apresentado pela interface.
     try:
@@ -170,27 +227,7 @@ def processar_caso(page, processos, nome_colecao, caso, titulos_criados):
 
 
 def test_ciclo_diario(page):
-    casos = [
-        # Documentos (PDF)
-        {"arquivo": "test_data/2mb.pdf", "tipo": "PDF", "tamanho": "2MB"},
-        {"arquivo": "test_data/10mb.pdf", "tipo": "PDF", "tamanho": "10MB"},
-        {"arquivo": "test_data/50mb.pdf", "tipo": "PDF", "tamanho": "50MB"},
-
-        # Imagens (PNG)
-        {"arquivo": "test_data/2mb.png", "tipo": "PNG", "tamanho": "2MB"},
-        {"arquivo": "test_data/5mb.png", "tipo": "PNG", "tamanho": "5MB"},
-        {"arquivo": "test_data/20mb.png", "tipo": "PNG", "tamanho": "20MB"},
-
-        # Áudios (MP3)
-        {"arquivo": "test_data/2mb.mp3", "tipo": "MP3", "tamanho": "2MB"},
-        {"arquivo": "test_data/10mb.mp3", "tipo": "MP3", "tamanho": "10MB"},
-        {"arquivo": "test_data/30mb.mp3", "tipo": "MP3", "tamanho": "30MB"},
-
-        # Vídeos (MP4)
-        {"arquivo": "test_data/5mb.mp4", "tipo": "MP4", "tamanho": "5MB"},
-        {"arquivo": "test_data/25mb.mp4", "tipo": "MP4", "tamanho": "25MB"},
-        {"arquivo": "test_data/50mb.mp4", "tipo": "MP4", "tamanho": "50MB"},
-    ]
+    casos = descobrir_casos()
 
     colecoes = ColecoesPage(page)
     processos = ProcessosPage(page)
@@ -251,10 +288,7 @@ def test_ciclo_diario(page):
                         processos.acessar
                     )
 
-                    termo_limpeza = titulo.split(" - Processo")[0] if " - Processo" in titulo else titulo[:18]
-                    card = processos.obter_card_processo(
-                        termo_limpeza
-                    )
+                    card = processos.obter_card_processo(titulo[:TAM_PREFIXO])
 
                     executar_etapa(
                         f"Excluir processo - {titulo}",

@@ -65,7 +65,7 @@ testes-wise-archival/
 
 ```bash
 git clone <URL_DO_REPOSITORIO>
-cd testes-wise-archival
+cd TestesWiseArchival
 
 # Criar ambiente virtual
 python -m venv .venv
@@ -147,16 +147,7 @@ No início do arquivo `tests/test_diario.py`:
 - `EXECUTAR_LIMPEZA = False`: Mantém os processos e a coleção visíveis no Wise Archival para inspeção manual.
 
 ### 2. Configurar os Casos de Teste no Ciclo Diário
-No arquivo `tests/test_diario.py`, você pode selecionar quais arquivos e formatos deseja rodar ajustando a lista `casos`:
-
-```python
-    casos = [
-        {"arquivo": "test_data/2mb.pdf", "tipo": "PDF", "tamanho": "2MB"},
-        {"arquivo": "test_data/5mb.png", "tipo": "PNG", "tamanho": "5MB"},
-        {"arquivo": "test_data/10mb.mp3", "tipo": "MP3", "tamanho": "10MB"},
-        {"arquivo": "test_data/25mb.mp4", "tipo": "MP4", "tamanho": "25MB"},
-    ]
-```
+Na pasta `tests/test_data`, você pode adicionar outros arquivos para utilizar nos testes.
 
 ---
 

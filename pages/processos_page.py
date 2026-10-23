@@ -1,4 +1,3 @@
-from datetime import datetime
 import re
 import time
 from playwright.sync_api import expect
@@ -90,30 +89,15 @@ class ProcessosPage:
             name="CRIAR"
         ).click()
 
-    def criar_processo(
-        self,
-        nome_colecao,
-        documento,
-        tipo_doc,
-        tamanho_nome
-    ):
-        titulo = (
-            f"AUTO-TEST {tipo_doc} {tamanho_nome} - Processo"
-            + datetime.now().strftime("%Y%m%d_%H%M%S")
-        )
-
+    def criar_processo(self, nome_colecao, documento, titulo):
         self.clicar_novo_processo()
 
         self.preencher_titulo(titulo)
 
-        self.escolher_colecao(
-            nome_colecao
-        )
+        self.escolher_colecao(nome_colecao)
 
         # Mede somente o upload
-        tempo_upload = self.fazer_upload(
-            documento
-        )
+        tempo_upload = self.fazer_upload(documento)
 
         self.clicar_proximo()
 
