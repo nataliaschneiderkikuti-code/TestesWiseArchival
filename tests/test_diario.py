@@ -9,7 +9,7 @@ from pages.processos_page import ProcessosPage
 from utils.database import salvar_resultado, registrar_etapa
 
 # Defina como False para pular a etapa de exclusão (processos e coleção)
-EXECUTAR_LIMPEZA = False
+EXECUTAR_LIMPEZA = True
 
 
 def executar_etapa(nome_etapa, funcao, *args, **kwargs):

@@ -1,14 +1,89 @@
+# ==========================================
+# Ambientes Virtuais (Virtual Environments)
+# ==========================================
 .venv/
+venv/
+env/
+ENV/
+*.venv
+
+# ==========================================
+# Caches e Compilação Python
+# ==========================================
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+.Python
+build/
+dist/
+*.egg-info/
 
+# ==========================================
+# Framework de Testes (pytest)
+# ==========================================
 .pytest_cache/
+.coverage
+htmlcov/
+.tox/
+coverage.xml
 
+# ==========================================
+# Artefatos do Playwright
+# ==========================================
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# ==========================================
+# Bancos de Dados e Relatórios Locais
+# ==========================================
 reports/
-
-# Banco de dados local
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
 
-# Configurações locais
+# ==========================================
+# Configurações Locais e Credenciais
+# ==========================================
 .env
+.env.*
+*.env
 utils/config.py
+config.py
+
+# ==========================================
+# Logs e Arquivos Temporários
+# ==========================================
+*.log
+*.tmp
+temp_*
+test_data/temp_*
+
+# ==========================================
+# IDEs e Editores de Código
+# ==========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Arquivos de Sistema Operacional (Windows / macOS)
+# ==========================================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
