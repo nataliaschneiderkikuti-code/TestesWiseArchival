@@ -27,7 +27,8 @@ def test_criar_processso(page):
     resultado = processos.criar_processo(
         nome,
         "test_data/grande.pdf",
-        "25MB"
+        "PDF",
+        "255MB"
     )
 
     titulo = resultado["titulo"]
@@ -95,7 +96,7 @@ def test_criar_processso(page):
 
             # O DOM foi recriado, então pegamos
             # novamente o card.
-            card = processos.obter_card_processo()
+            card = processos.obter_card_processo(titulo[:18])
 
     # O cronômetro termina quando a interface
     # finalmente mostrou o tempo do processamento.

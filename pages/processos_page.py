@@ -1,6 +1,7 @@
 from datetime import datetime
 import re
 import time
+from playwright.sync_api import expect
 
 
 class ProcessosPage:
@@ -8,7 +9,7 @@ class ProcessosPage:
     def __init__(self, page):
         self.page = page
 
-    def obter_card_processo(self, prefixo_visivel="AUTO-TEST"): # O prefixo visível eu tenho que mudar depois
+    def obter_card_processo(self, prefixo_visivel, timeout=15000):
         h1 = self.page.locator(
             "h1.mat-tooltip-trigger"
         ).filter(
@@ -16,7 +17,8 @@ class ProcessosPage:
         ).first
 
         h1.wait_for(
-            state="visible"
+            state="visible",
+            timeout=timeout
         )
 
         return self.page.locator(
@@ -69,7 +71,7 @@ class ProcessosPage:
             exact=True
         ).wait_for(
             state="visible",
-            timeout=120000
+            timeout=180000
         )
 
         fim_upload = time.perf_counter()
@@ -92,10 +94,11 @@ class ProcessosPage:
         self,
         nome_colecao,
         documento,
+        tipo_doc,
         tamanho_nome
     ):
         titulo = (
-            f"AUTO-TEST PDF {tamanho_nome} - Processo" # Em vez de PDF eu tenho que mudar pra tipo depois
+            f"AUTO-TEST {tipo_doc} {tamanho_nome} - Processo"
             + datetime.now().strftime("%Y%m%d_%H%M%S")
         )
 
@@ -126,41 +129,81 @@ class ProcessosPage:
             "inicio_processamento": inicio_processamento
         }
 
+    def excluir_processo(self, card):
+        botao_menu = card.locator("button.mat-menu-trigger")
+        botao_menu.wait_for(state="visible", timeout=15000)
+
+        # Passa o mouse sobre o card para ativar controles caso necessário
+        try:
+            card.hover(timeout=3000)
+        except Exception:
+            pass
+
+        # Abre o menu de ações do processo
+        try:
+            botao_menu.click(timeout=5000)
+        except Exception:
+            # Caso algum overlay (ex: div.card-menu-overlay) intercepte o ponteiro, força o clique
+            botao_menu.click(force=True)
+
+        # Clica na opção Excluir do menu suspenso
+        excluir = self.page.get_by_role(
+            "menuitem",
+            name="Excluir"
+        )
+        expect(excluir).to_be_visible(timeout=10000)
+        excluir.click()
+
+        # Confirma a exclusão no SweetAlert
+        confirmar = self.page.locator(
+            "button.swal2-confirm.excluir-modal, button.swal2-confirm"
+        ).first
+        expect(confirmar).to_be_visible(timeout=10000)
+        confirmar.click()
+
     def obter_tempo_interface(self, card):
-        """
-        Obtém o tempo de processamento mostrado
-        pela interface.
-        """
-
         infos = card.locator("p.infos")
-
         quantidade = infos.count()
 
         if quantidade < 2:
             raise AssertionError(
-                "Não foram encontrados elementos "
-                "p.infos suficientes."
+                "Não foram encontrados elementos p.infos suficientes."
             )
 
-        elemento_tempo = infos.nth(
-            quantidade - 2
-        )
+        elemento_tempo = infos.nth(quantidade - 2)
+        texto = elemento_tempo.inner_text().strip().lower()
 
-        texto = elemento_tempo.inner_text().strip()
+        print(f"[TEMPO INTERFACE] {texto}")
 
-        print(
-            f"[TEMPO INTERFACE] {texto}"
-        )
+        total_segundos = 0
+        encontrou = False
 
-        match = re.search(
-            r"(\d+)\s*segundo",
-            texto
-        )
+        # Horas
+        match_hora = re.search(r"(\d+)\s*(?:hora|horas|h\b)", texto)
+        if match_hora:
+            total_segundos += int(match_hora.group(1)) * 3600
+            encontrou = True
 
-        if not match:
+        # Minutos
+        match_min = re.search(r"(\d+)\s*(?:minuto|minutos|min\b|m\b)", texto)
+        if match_min:
+            total_segundos += int(match_min.group(1)) * 60
+            encontrou = True
+
+        # Segundos
+        match_seg = re.search(r"(\d+)\s*(?:segundo|segundos|seg\b|s\b)", texto)
+        if match_seg:
+            total_segundos += int(match_seg.group(1))
+            encontrou = True
+
+        if not encontrou:
+            # Se a interface contiver apenas o número puro de segundos
+            match_puro = re.search(r"^(\d+)$", texto)
+            if match_puro:
+                return int(match_puro.group(1))
+
             raise AssertionError(
-                f"Não foi possível extrair o tempo "
-                f"da interface: '{texto}'"
+                f"Não foi possível extrair o tempo da interface: '{texto}'"
             )
 
-        return int(match.group(1))
+        return total_segundos
