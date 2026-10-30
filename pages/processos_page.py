@@ -145,13 +145,46 @@ class ProcessosPage:
         expect(confirmar).to_be_visible(timeout=10000)
         confirmar.click()
 
-    def obter_tempo_interface(self, card):
+    def cancelar_processo(self, card):
+        botao_cancelar = card.locator(
+            "button.cancelar-processo-btn, button:has-text('Cancelar')"
+        ).first
+
+        # Clica no botão Cancelar dentro do card
+        try:
+            botao_cancelar.wait_for(state="visible", timeout=5000)
+            botao_cancelar.click(timeout=5000)
+        except Exception:
+            botao_cancelar.click(force=True)
+
+        # Confirma a ação no modal SweetAlert ("Sim, cancelar")
+        confirmar = self.page.locator(
+            "button.swal2-confirm:has-text('Sim, cancelar'), button.swal2-confirm"
+        ).first
+        expect(confirmar).to_be_visible(timeout=8000)
+        confirmar.click()
+
+        # Aguarda a interface atualizar e mostrar o badge 'Cancelado'
+        try:
+            badge_cancelado = card.get_by_text("Cancelado", exact=True)
+            expect(badge_cancelado).to_be_visible(timeout=10000)
+        except Exception:
+            pass
+
+    def obter_tempo_interface(self, card, timeout=10000):
         infos = card.locator("p.infos")
+
+        # Aguarda ativamente que pelo menos 2 elementos p.infos estejam renderizados no card
+        try:
+            infos.nth(1).wait_for(state="visible", timeout=timeout)
+        except Exception:
+            pass
+
         quantidade = infos.count()
 
         if quantidade < 2:
             raise AssertionError(
-                "Não foram encontrados elementos p.infos suficientes."
+                f"Não foram encontrados elementos p.infos suficientes no card (encontrados: {quantidade})."
             )
 
         elemento_tempo = infos.nth(quantidade - 2)

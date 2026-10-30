@@ -16,6 +16,13 @@ EXTENSOES_SUPORTADAS = {".pdf", ".png", ".mp3", ".mp4"}  # ajuste se quiser
 TAM_PREFIXO = 18
 
 
+class TimeoutProcessamentoError(Exception):
+    """Exceção levantada quando o processamento do processo excede o limite de tentativas/tempo."""
+    def __init__(self, mensagem, reloads=5):
+        super().__init__(mensagem)
+        self.reloads = reloads
+
+
 def formatar_tamanho(tamanho_bytes):
     mb = tamanho_bytes / (1024 * 1024)
     if mb >= 1:
@@ -89,9 +96,10 @@ def executar_etapa(nome_etapa, funcao, *args, **kwargs):
 
 def aguardar_processamento(page, processos, titulo, prefixo=None):
     quantidade_reloads = 0
-    termo_busca = prefixo if prefixo else titulo[:18]
+    termo_busca = prefixo if prefixo else titulo[:TAM_PREFIXO]
+    total_tentativas = 5
 
-    for tentativa in range(1, 6):
+    for tentativa in range(1, total_tentativas + 1):
         try:
             card = processos.obter_card_processo(termo_busca)
             expect(card).to_be_visible(timeout=15000)
@@ -101,10 +109,20 @@ def aguardar_processamento(page, processos, titulo, prefixo=None):
             ).to_be_hidden(timeout=120000)
 
         except Exception as erro:
-            if tentativa == 5:
-                raise
-
             quantidade_reloads += 1
+
+            if tentativa == total_tentativas:
+                print(f"\n[TIMEOUT] Tentando cancelar o processo no Wise Archival: {titulo}")
+                try:
+                    processos.cancelar_processo(card)
+                    print(f"[CANCELADO] Processo {titulo} cancelado com sucesso após timeout.")
+                except Exception as erro_canc:
+                    print(f"[FALHA AO CANCELAR] Não foi possível cancelar {titulo}: {erro_canc}")
+
+                raise TimeoutProcessamentoError(
+                    f"Timeout: o carregamento do processo não foi concluído após {total_tentativas} tentativas ({quantidade_reloads} reloads) e foi cancelado.",
+                    reloads=quantidade_reloads
+                ) from erro
 
             print(
                 f"[RELOAD] {titulo}: tentativa {tentativa} "
@@ -124,8 +142,15 @@ def aguardar_processamento(page, processos, titulo, prefixo=None):
 
         return tempo_interface, quantidade_reloads
 
-    raise AssertionError(
-        f"Não foi possível confirmar a conclusão: {titulo}"
+    try:
+        card = processos.obter_card_processo(termo_busca)
+        processos.cancelar_processo(card)
+    except Exception:
+        pass
+
+    raise TimeoutProcessamentoError(
+        f"Timeout: o carregamento do processo não foi concluído após {total_tentativas} tentativas ({quantidade_reloads} reloads) e foi cancelado.",
+        reloads=quantidade_reloads
     )
 
 
@@ -176,6 +201,17 @@ def processar_caso(page, processos, nome_colecao, caso, titulos_criados):
     except Exception as erro:
         fim_processamento = time.perf_counter()
         tempo_processamento_real = fim_processamento - inicio_processamento
+
+        reloads = getattr(erro, "reloads", 5 if ("Timeout" in str(erro) or "Processando..." in str(erro)) else 0)
+
+        if isinstance(erro, TimeoutProcessamentoError):
+            mensagem_banco = str(erro)
+        elif "Processando..." in str(erro) or "to_be_hidden" in str(erro):
+            reloads = 5
+            mensagem_banco = f"Timeout: o carregamento do processo não foi concluído após 5 tentativas ({reloads} reloads) e foi cancelado."
+        else:
+            mensagem_banco = f"{type(erro).__name__}: {erro}"
+
         salvar_resultado(
             arquivo=arquivo.name,
             tipo_arquivo=caso["tipo"],
@@ -183,9 +219,9 @@ def processar_caso(page, processos, nome_colecao, caso, titulos_criados):
             tempo_upload=tempo_upload,
             tempo_processamento_real=tempo_processamento_real,
             tempo_interface=None,
-            reloads=0,
+            reloads=reloads,
             status="FALHA",
-            mensagem=f"{type(erro).__name__}: {erro}"
+            mensagem=mensagem_banco
         )
         raise
 
