@@ -20,7 +20,7 @@ class ColecoesPage:
         self.page.locator('textarea[formcontrolname="descricao"]').fill(descricao)
 
     def clicar_proximo(self):
-        self.page.get_by_role("button", name="PROXIMO").click()
+        self.page.get_by_role("button", name="PRÓXIMO").click()
 
     def criar(self):
         self.page.get_by_role("button", name="CRIAR").click()
