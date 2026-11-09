@@ -4,7 +4,7 @@ Suíte de testes automatizados ponta a ponta (E2E) para a interface web do **Wis
 
 ---
 
-## 🎯 Objetivos do Projeto
+## Objetivos do Projeto
 
 - **Validação de Fluxos E2E:** Login de gestor, criação/exclusão de coleções e submissão/exclusão de processos.
 - **Auditoria de Performance:** Medição precisa do tempo de upload, tempo real de processamento e extração do tempo reportado pelo sistema.
@@ -14,7 +14,7 @@ Suíte de testes automatizados ponta a ponta (E2E) para a interface web do **Wis
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 - **Linguagem:** Python 3.11+
 - **Automação Web:** [Playwright](https://playwright.dev/python/) (Python Sync API)
@@ -26,7 +26,7 @@ Suíte de testes automatizados ponta a ponta (E2E) para a interface web do **Wis
 
 ---
 
-## 📁 Estrutura do Repositório
+## Estrutura do Repositório
 
 ```text
 testes-wise-archival/
@@ -59,7 +59,7 @@ testes-wise-archival/
 
 ---
 
-## 🚀 Instalação e Preparação do Ambiente
+## Instalação e Preparação do Ambiente
 
 ### 1. Clonar o repositório e criar o ambiente virtual
 
@@ -91,19 +91,19 @@ playwright install chromium
 
 ---
 
-## ⚙️ Configuração de Acesso
+## Configuração de Acesso
 
 Antes de rodar os testes, crie o arquivo com as credenciais do ambiente de testes:
 
-1. Copie o arquivo modelo:
+1. Crie `utils/config.py`
+2. Copie o arquivo modelo:
    ```bash
    cp utils/config.example.py utils/config.py
    ```
-2. Crie `utils/config.py` e preencha a URL da interface e as credenciais do usuário Gestor
 
 ---
 
-## 📦 Geração de Arquivos de Teste (`test_data/`)
+## Geração de Arquivos de Teste (`test_data/`)
 
 O projeto possui scripts dedicados para gerar arquivos sintéticos com tamanhos exatos e conteúdo válido:
 
@@ -129,7 +129,7 @@ python scripts/gerar_todos_arquivos.py --mp4
 
 ---
 
-## 🧪 Executando os Testes
+## Executando os Testes
 
 ### 1. Teste Diário Principal (`test_diario.py`)
 
@@ -151,7 +151,7 @@ Na pasta `tests/test_data`, você pode adicionar outros arquivos para utilizar n
 
 ---
 
-## 📊 Banco de Dados de Métricas (`reports/resultados.db`)
+## Banco de Dados de Métricas (`reports/resultados.db`)
 
 Todos os resultados são persistidos automaticamente no banco SQLite localizado em `reports/resultados.db`.
 
